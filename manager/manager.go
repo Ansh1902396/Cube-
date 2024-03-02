@@ -1,0 +1,30 @@
+package manager
+
+import (
+	"fmt"
+
+	"github.com/Ansh1902396/cube/task"
+	"github.com/golang-collections/collections/queue"
+	"github.com/google/uuid"
+)
+
+type Manager struct {
+	Pending        queue.Queue
+	TaskDb         map[string][]task.Task
+	EventDb        map[string][]task.TaskEvent
+	Workers        []string
+	WorkersTaskMap map[string][]uuid.UUID
+	TaskWorkerMap  map[uuid.UUID]string
+}
+
+func (m *Manager) SelectWorker() {
+	fmt.Println("Selecting a worker")
+}
+
+func (m *Manager) UpdateTask() {
+	fmt.Println("I will Update a task")
+}
+
+func (m *Manager) SendWork() {
+	fmt.Println("I will send work to a worker")
+}

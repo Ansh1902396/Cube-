@@ -23,6 +23,15 @@ type Task struct {
 	FinishTime    time.Time
 }
 
+// Struct for TaskEvent
+// user can control specific task by using this struct
+type TaskEvent struct {
+	ID        uuid.UUID
+	State     State
+	TimeStamp time.Time
+	Task      Task
+}
+
 const (
 	Pending State = iota
 	Scheduled
