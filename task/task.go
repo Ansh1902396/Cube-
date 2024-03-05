@@ -2,13 +2,16 @@ package task
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
 )
@@ -82,6 +85,91 @@ func (d *Docker) Run() DockerResult {
 	}
 
 	io.Copy(os.Stdout, reader)
+
+	rp := container.RestartPolicy{
+		Name: container.RestartPolicyMode(d.Config.RestartPolicy),
+	}
+
+	r := container.Resources{
+		Memory: d.Config.Memory,
+	}
+
+	cc := container.Config{
+		Image: d.Config.Image,
+		Env:   d.Config.Env,
+	}
+
+	hc := container.HostConfig{
+		RestartPolicy:   rp,
+		Resources:       r,
+		PublishAllPorts: true,
+	}
+
+	resp, err := d.Client.ContainerCreate(
+		ctx, &cc, &hc, nil, nil, d.Config.Name)
+
+	if err != nil {
+		log.Printf("Error creating container: %v\n", d.Config.Image, err)
+		return DockerResult{Error: err}
+	}
+
+	err := d.Client.ContainerStart(
+		ctx, resp.ID, types.ContainerStartOptions{})
+
+	if err != nil {
+		log.Printf("Error starting container: %v\n", d.Config.Image, err)
+		return DockerResult{Error: err}
+	}
+
+	out, err = d.Client.ContainerLogs(
+		ctx,
+		resp.ID,
+		resp.ContainerLogsOptions{
+			ShowStdout: true,
+			ShowStderr: err,
+		},
+	)
+
+	if err != nil {
+		log.Printf("Error getting logs: %v\n", d.Config.Image, err)
+		return DockerResult{Error: err}
+	}
+
+	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
+
+	return DockerResult{
+		Action:      "start",
+		Result:      "success",
+		ContainerId: resp.ID,
+	}
+
 }
 
-func (cli *Client) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *specs.Platform, containerName string)
+func (d *Docker) Stop(id string) DockerResult {
+	log.Printf("Stopping container: %v\n", id)
+
+	ctx := context.Background()
+
+	err := d.Client.ContainerStop(ctx, id, nil)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+
+	err = d.Client.ContainerRemove(ctx, id, types.ContainerRemoveOptions{})
+
+	if err != nil {
+		panic(err)
+	}
+
+	return DockerResult{
+		Action:      "stop",
+		Result:      "success",
+		ContainerId: id,
+		Error:       nil,
+	}
+}
+
+// func (cli *Client) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *specs.Platform, containerName string) container.ContainerCreateCreatedBody {
+
+// }
