@@ -10,6 +10,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
@@ -113,7 +114,7 @@ func (d *Docker) Run() DockerResult {
 		return DockerResult{Error: err}
 	}
 
-	err := d.Client.ContainerStart(
+	err = d.Client.ContainerStart(
 		ctx, resp.ID, types.ContainerStartOptions{})
 
 	if err != nil {
@@ -121,14 +122,7 @@ func (d *Docker) Run() DockerResult {
 		return DockerResult{Error: err}
 	}
 
-	out, err = d.Client.ContainerLogs(
-		ctx,
-		resp.ID,
-		resp.ContainerLogsOptions{
-			ShowStdout: true,
-			ShowStderr: err,
-		},
-	)
+	out, err := d.Client.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 
 	if err != nil {
 		log.Printf("Error getting logs: %v\n", d.Config.Image, err)
@@ -150,7 +144,7 @@ func (d *Docker) Stop(id string) DockerResult {
 
 	ctx := context.Background()
 
-	err := d.Client.ContainerStop(ctx, id, nil)
+	err := d.Client.ContainerStop(ctx, id, containertypes.StopOptions{})
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
