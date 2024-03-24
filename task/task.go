@@ -17,8 +17,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type State int
-
 type Docker struct {
 	Client      *client.Client
 	Config      Config
@@ -47,11 +45,12 @@ type Config struct {
 
 type Task struct {
 	ID            uuid.UUID
+	ContainerID   string
 	Name          string
 	State         State
 	Image         string
-	Memory        string
-	Disk          string
+	Memory        int
+	Disk          int
 	ExposedPorts  nat.PortSet
 	PortBindings  map[string]string
 	RestartPolicy string
@@ -75,6 +74,22 @@ const (
 	Completed
 	Failed
 )
+
+func NewConfig(t *Task) *Config {
+	return &Config{
+		Name:          t.Name,
+		Image:         t.Image,
+		RestartPolicy: t.RestartPolicy,
+	}
+}
+
+func NewDocker(c *Config) *Docker {
+	dc, _ := client.NewClientWithOpts(client.FromEnv)
+	return &Docker{
+		Client: dc,
+		Config: *c,
+	}
+}
 
 // The Run Function
 func (d *Docker) Run() DockerResult {

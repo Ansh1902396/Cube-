@@ -21,7 +21,7 @@ func (m *Manager) SelectWorker() {
 	fmt.Println("Selecting a worker")
 }
 
-func (m *Manager) UpdateTask() {
+func (m *Manager) UpdateTasks() {
 	fmt.Println("I will Update a task")
 }
 
