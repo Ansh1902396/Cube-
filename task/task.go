@@ -10,7 +10,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
@@ -103,7 +102,7 @@ func (d *Docker) Run() DockerResult {
 	io.Copy(os.Stdout, reader)
 
 	rp := container.RestartPolicy{
-		Name: container.RestartPolicyMode(d.Config.RestartPolicy),
+		Name: d.Config.RestartPolicy,
 	}
 
 	r := container.Resources{
@@ -140,7 +139,7 @@ func (d *Docker) Run() DockerResult {
 	out, err := d.Client.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 
 	if err != nil {
-		log.Printf("Error getting logs: %v\n", d.Config.Image, err)
+		log.Printf("Error getting logs: %v\n", d.Config.Image)
 		return DockerResult{Error: err}
 	}
 
@@ -159,7 +158,7 @@ func (d *Docker) Stop(id string) DockerResult {
 
 	ctx := context.Background()
 
-	err := d.Client.ContainerStop(ctx, id, containertypes.StopOptions{})
+	err := d.Client.ContainerStop(ctx, id, nil)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
