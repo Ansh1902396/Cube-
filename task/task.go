@@ -55,6 +55,7 @@ type Task struct {
 	RestartPolicy string
 	StartTime     time.Time
 	FinishTime    time.Time
+	Cpu           float64
 }
 
 // Struct for TaskEvent

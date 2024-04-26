@@ -3,10 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
+	"strconv"
 
-	"github.com/Ansh1902396/cube/manager"
-	"github.com/Ansh1902396/cube/node"
 	"github.com/Ansh1902396/cube/task"
 	"github.com/Ansh1902396/cube/worker"
 	"github.com/docker/docker/client"
@@ -54,80 +52,23 @@ func stopContainer(d *task.Docker) *task.DockerResult {
 }
 
 func main() {
-	t := task.Task{
-		ID:    uuid.New(),
-		Name:  "test-container-1",
-		State: task.Scheduled,
-		Image: "strm/helloworld-http",
-	}
+	host := os.Getenv("TESSERACT_HOST")
+	port, _ := strconv.Atoi(os.Getenv("TESSERACT_PORT"))
 
-	te := task.TaskEvent{
-		ID:        uuid.New(),
-		State:     task.Pending,
-		TimeStamp: time.Now(),
-		Task:      t,
-	}
-
-	fmt.Printf("task : %v\n", t)
-	fmt.Printf("task event  : %v \n", te)
+	fmt.Println("starting cube worker")
 
 	w := worker.Worker{
 		Queue: *queue.New(),
 		Db:    make(map[uuid.UUID]*task.Task),
 	}
-	fmt.Printf("Worker : %v\n", w)
 
-	fmt.Println("starting task")
-	w.AddTask(t)
-	result := w.RunTask()
-	if result.Error != nil {
-		panic(result.Error)
+	api := worker.Api{
+		Address: host,
+		Port:    port,
+		Worker:  &w,
 	}
 
-	t.ContainerID = result.ContainerId
-
-	fmt.Printf("task is running")
-	fmt.Println("Sleepy time")
-	time.Sleep(time.Second * 30)
-	fmt.Printf("stopping task %s\n", t.ID)
-	t.State = task.Completed
-	w.AddTask(t)
-	result = w.RunTask()
-	if result.Error != nil {
-		panic(result.Error)
-	}
-
-	m := manager.Manager{
-		Pending: *queue.New(),
-		TaskDb:  make(map[string][]task.Task),
-		EventDb: make(map[string][]task.TaskEvent),
-		Workers: []string{w.Name},
-	}
-
-	fmt.Printf("manager: %v\n", m)
-	m.SelectWorker()
-	m.UpdateTasks()
-	m.SendWork()
-	n := node.Node{
-		Name:   "Node-1",
-		Ip:     "192.168.1.1",
-		Cores:  4,
-		Memory: 1024,
-		Disk:   25,
-		Role:   "worker",
-	}
-	fmt.Printf("node: %v\n", n)
-
-	fmt.Printf("create a test container\n")
-
-	dockerTask, createResult := createContainer()
-
-	if createResult.Error != nil {
-		fmt.Printf("%v", createResult.Error)
-		os.Exit(1)
-	}
-	time.Sleep(time.Second * 5)
-	fmt.Printf("stopping container %s\n", createResult.ContainerId)
-	_ = stopContainer(dockerTask)
-
+	go runTasks(&w)
+	go w.CollectStats()
+	api.Start()
 }

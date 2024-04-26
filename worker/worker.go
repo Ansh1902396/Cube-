@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Ansh1902396/cube/stats"
 	"github.com/Ansh1902396/cube/task"
 	"github.com/golang-collections/collections/queue"
 	"github.com/google/uuid"
@@ -15,6 +16,7 @@ type Worker struct {
 	Queue     queue.Queue
 	Db        map[uuid.UUID]*task.Task
 	TaskCount int
+	Stats     stats.Stats
 }
 
 func (w *Worker) StartTask(t task.Task) task.DockerResult {
@@ -41,10 +43,15 @@ func (w *Worker) AddTask(t task.Task) {
 }
 
 func (w *Worker) CollectStats() {
-	fmt.Println("Collecting stats")
+	for {
+		log.Println("Collecting stats")
+		w.Stats = *stats.GetStats()
+		w.TaskCount = w.Stats.TaskCount
+		time.Sleep(15 * time.Second)
+	}
 }
 
-func (w *Worker) RunTask() task.DockerResult {
+func (w *Worker) runTask() task.DockerResult {
 	t := w.Queue.Dequeue()
 	if t == nil {
 		log.Println("No task to run")

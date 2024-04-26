@@ -11,6 +11,11 @@ import (
 	"github.com/google/uuid"
 )
 
+type ErrResponse struct {
+	HTTPStatusCode int    `json:"status"`
+	Message        string `json:"message"`
+}
+
 func (a *Api) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
@@ -66,4 +71,10 @@ func (a *Api) StopTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Added task %v to stop container %v\n", taskToStop.ID)
 	w.WriteHeader(204)
+}
+
+func (a *Api) GetStatsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(a.Worker.Stats)
 }
